@@ -36,51 +36,104 @@ class DecisionTree:
 
     def __init__(self):
         # Hard-coded
-        self.numberOfFeatures = 8
+        self._numFeatures = 8
+        self._numClasses = 3
+        self._featureValues = []    # TODO
+
+        # Hyper-parameters
+        self._homogeneousPercentage = 0.99  # percentage of data for a node to be considered "homogeneous"
+
+        self._root = None
         
-    def train(training_data, training_labels):
+    def train(self, training_data, training_labels):
+        self._root = self._growTree(training_data, training_labels)
+
+    def test(self, testing_data):
         pass
 
-    def test(testing_data):
-        pass
-
-    def _classify(data_point):
+    def _classify(self, data_point):
         "Classifies a single data point/example"
         pass
 
-    def _growTree(D):
-        if homogeneous(D) then return (Node with Label(D) )
-        S = bestSplit(D)
-        split D into subsets D_i according to the literals in S
-        for each i:
-            if D_i is not empty then T_i = self(D_i)
-            else T_i = (Node with label=Label(D) )
+    # def _growTree(self, data, labels):
+    #     if homogeneous(D) then return (Node with Label(D) )
+    #     S = bestSplit(D)
+    #     split D into subsets D_i according to the literals in S
+    #     for each i:
+    #         if D_i is not empty then T_i = self(D_i)
+    #         else T_i = (Node with label=Label(D) )
         
-        return (Node with label=None, featureSplit=S, children T_i)
+    #     return (Node with label=None, featureSplit=S, children T_i)
 
-    def homogeneous(D):
-        "Returns True iff D is at least 99% homogeneous"
-        for each feature f, count the number of examples with feature f and store them in a List
-        return True iff a feature f is at least 99% |D|
+    def _homogeneous(self, labels):
+        "Returns True iff data is at least 99% homogeneous"
+        classProbability = self._getClassProbabilities(labels)
+        
+        for c, p in enumerate(classProbability):
+            if p >= self._homogeneousPercentage:
+                return True
 
-    def label(D):
+        return False
+
+    def _label(self, labels):
         "Returns the label of D by majority vote"
-        return the feature f whose count in D is greatest
+        classProbability = self._getClassProbabilities(labels)
+        return classProbability.index( max(classProbability) )
 
-    def bestSplit(D):
-        "Returns the feature that best splits D"
-        for each feature f:
-            for each feature value v:
-                D_f_v = subset of D with f=v
-                valueImpurity[v] = Impurity(D_f_v)
+    # def _bestSplit(self, data, labels):
+    #     "Returns the feature that best splits D"
+    #     totalFeatureImpurity = []
+        
+    #     for f in self._numFeatures:
+    #         featureValueImpurity = {}
 
-            featureTotalImpurity[f] = 1/|D| * sum (i=1, L) [ |D_i| * valueImpurity[i] ]
+    #         # labels_f : feature value v -> subset of labels whose data has f=v
+    #         labels_f = {v: {} for v in self._featureValues[f] }
 
-        return feature f with least featureTotalImpurity
+    #         for v in self._featureValues[f]:
+    #             for ex, c in zip(data, labels):
+    #                 if ex[f] == v:
+    #                     labels_f[v].add(c)
 
-    def Impurity(D):
-        featureProbability = dictionary from feature f to count(f, D) / |D|
-        return sum (i=1, K) [ Gini(p_i) ]
+    #             featureValueImpurity[v] = self._impurity(labels_f_v)
 
-    def Gini(p):
+    #         totalFeatureImpurity.append( 1/len(data) * sum( len(labels_f[v]) * featureValueImpurity[v] for v in self._featureValues[f] ) )
+
+    #     return totalFeatureImpurity.index( min(totalFeatureImpurity) )
+
+    def _impurity(self, labels):
+        classProbability = self._getClassProbabilities(labels)
+        return sum(self._giniIndex(p) for p in classProbability)
+
+    def _giniIndex(self, p):
         return p * (1 - p)
+
+    def _getClassProbabilities(self, labels):
+        classProbability = [0 for i in range(self._numClasses) ]
+        for c in labels:
+            classProbability[c] += 1 / len(labels)
+        return classProbability
+
+dt = DecisionTree()
+
+# # _homogeneous and _label tests : PASSED
+
+# labels = [0, 1, 2, 0, 1, 2, 0]
+
+# print( dt._homogeneous(labels) )    # false
+# print( dt._label(labels) )          # 0
+
+# labels = [0, 0, 0, 0, 0, 0, 0]
+# print( dt._homogeneous(labels) )    # true
+# labels = [0, 0, 0, 0, 0, 0, 1]
+# print( dt._homogeneous(labels) )    # false
+# labels = [0] * 99 + [1]
+# print( dt._homogeneous(labels) )    # true
+
+
+# # _impurity and _giniIndex tests : PASSED
+
+# labels = [0, 1, 2, 0, 1, 2, 0]
+
+# print( dt._getClassProbabilities(labels) )  # [0.43, 0.29, 0.29]
+# print( dt._impurity(labels) )   # 0.65
