@@ -115,28 +115,27 @@ class DecisionTree:
         totalFeatureImpurity = []
         
         for f in range(self._numFeatures):
-            featureValueImpurities = []
 
             # labels_f[v]: sublist of labels whose data has f=v
             labels_f = {v: [] for v in self._featureValues[f] }
+            for ex, c in zip(data, labels):
+                v = ex[f]
+                labels_f[v].append(c)
 
+            # Calculate impurity for each feature value path
+            featureValueImpurity = {}
             for v in self._featureValues[f]:
-                for ex, c in zip(data, labels):
-                    if ex[f] == v:
-                        labels_f[v].append(c)
+                featureValueImpurity[v] = self._impurity(labels_f[v])
 
-                featureValueImpurities.append(self._impurity(labels_f[v]) )
+            featureValueCount = {v: len(labels_f[v]) for v in self._featureValues[f]}
 
-            # print(f"labels_f: {labels_f}")
-            # print(f"featureValueImpurities: {featureValueImpurities}")
-
-            totalFeatureImpurity.append(self._getTotalImpurity(featureValueImpurities, [len(labels_f[v]) for v in self._featureValues[f] ]) )
+            totalFeatureImpurity.append(self._getTotalImpurity(f, featureValueImpurity, featureValueCount) )
 
         # print(f"totalFeatureImpurity: {totalFeatureImpurity}")
         return totalFeatureImpurity.index( min(totalFeatureImpurity) )
 
-    def _getTotalImpurity(self, impurities, counts):
-        return 1/sum(counts) * sum( count * impurity for count, impurity in zip(counts, impurities) )
+    def _getTotalImpurity(self, feature, impurity, count):
+        return 1/sum(count.values() ) * sum( count[v] * impurity[v] for v in self._featureValues[feature] )
 
     def _impurity(self, labels):
         classProbability = self._getClassProbabilities(labels)
@@ -178,12 +177,14 @@ dt = DecisionTree()
 
 # # _getTotalImpurity : PASSED
 
-# impurities = [0.65, 0.43, 0.25]
-# counts = [3, 6, 2]
-# print( dt._getTotalImpurity(impurities, counts) )   # 0.46
-# impurities = [0.23, 0.99]
-# counts = [5, 6]
-# print( dt._getTotalImpurity(impurities, counts) )   # 0.64
+# dt._featureValues = [ {0, 1, 2} ]
+# impurities = {0: 0.65, 1: 0.43, 2: 0.25}
+# counts = {0: 3, 1: 6, 2: 2}
+# print( dt._getTotalImpurity(0, impurities, counts) )   # 0.46
+# dt._featureValues = [ {0, 1} ]
+# impurities = {0: 0.23, 1: 0.99}
+# counts = {0: 5, 1: 6}
+# print( dt._getTotalImpurity(0, impurities, counts) )   # 0.64
 
 
 # # _bestSplit : PASSED
