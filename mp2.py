@@ -26,7 +26,7 @@ def run_train_test(training_data, training_labels, testing_data):
 
 class DecisionTreeNode:
 
-    def __init__(self, label=None, featureSplit=None, children=[]):
+    def __init__(self, label=None, featureSplit=None, children={}):
         self.label = label
         self.featureSplit = featureSplit    # feature that splits this node's data set
         self.children = children
@@ -62,7 +62,7 @@ class DecisionTree:
         if not node:
             return
         print(node)
-        for child in node.children:
+        for child in node.children.values():
             self._printPreOrderHelper(child)
 
     def _classify(self, data_point):
@@ -84,14 +84,14 @@ class DecisionTree:
             featureValueLabels[v].append(c)
         
         # recursive step: get children
-        children = []
+        children = {}
         for v, dataSubset in featureValueData.items():
             labelsSubset = featureValueLabels[v]
 
             if dataSubset:
-                children.append(self._growTree(dataSubset, labelsSubset) )
+                children[v] = self._growTree(dataSubset, labelsSubset)
             else:   # Empty subset, so use parent's label
-                children.append(DecisionTreeNode(label=self._label(labels)) )
+                children[v] = DecisionTreeNode(label=self._label(labels) )
 
         return DecisionTreeNode(featureSplit=s, children=children)
 
