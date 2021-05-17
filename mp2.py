@@ -65,9 +65,16 @@ class DecisionTree:
         for child in node.children.values():
             self._printPreOrderHelper(child)
 
-    def _classify(self, data_point):
+    def _classify(self, dataPoint):
         "Classifies a single data point/example"
-        pass
+        return self._decide(self._root, dataPoint)
+
+    def _decide(self, node, dataPoint):
+        if node.label is not None:
+            return node.label
+        
+        v = dataPoint[node.featureSplit]
+        return self._decide(node.children[v], dataPoint)
 
     def _growTree(self, data, labels):
         if self._homogeneous(labels):
@@ -226,3 +233,30 @@ dt = DecisionTree()
 # dt.printPreOrder()
 # # featureSplit preorder: [1, 0, 2, 0]
 # # label preorder: [0, 0, 1, 1, 0]
+
+
+# # _classify -> _decide : PASSED
+
+# dt._numFeatures = 3
+# dt._numClasses = 2
+# dt._featureValues = [ {0, 1}, {0, 1}, {0, 1} ]
+
+# data =  [   [1, 0, 0],
+#             [0, 0, 0],
+#             [1, 1, 1],
+#             [0, 0, 1],
+#             [0, 1, 1],
+#             [0, 1, 0],
+#             [1, 0, 1]
+# ]
+# labels = [0, 0, 0, 0, 1, 1, 1]
+
+# dt.train(data, labels)
+# print( dt._classify([0, 0, 0]) )    # 0
+# print( dt._classify([0, 0, 1]) )    # 0
+# print( dt._classify([1, 0, 0]) )    # 0
+# print( dt._classify([1, 0, 1]) )    # 1
+# print( dt._classify([0, 1, 0]) )    # 1
+# print( dt._classify([0, 1, 1]) )    # 1
+# print( dt._classify([1, 1, 0]) )    # 0
+# print( dt._classify([1, 1, 1]) )    # 0
