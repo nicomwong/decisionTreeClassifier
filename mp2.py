@@ -26,10 +26,14 @@ def run_train_test(training_data, training_labels, testing_data):
 
 class DecisionTreeNode:
 
-    def __init__(self, label, featureSplit):
+    def __init__(self, label=None, featureSplit=None, children=[]):
         self.label = label
         self.featureSplit = featureSplit    # feature that splits this node's data set
-        self.children = []
+        self.children = children
+
+    def __repr__(self):
+        cls = self.__class__
+        return f"{cls.__name__}(label={self.label}, featureSplit={self.featureSplit}, children=<FILL>)"
 
 
 class DecisionTree:
@@ -51,19 +55,45 @@ class DecisionTree:
     def test(self, testing_data):
         pass
 
+    def printPreOrder(self):
+        self._printPreOrderHelper(self._root)
+
+    def _printPreOrderHelper(self, node):
+        if not node:
+            return
+        print(node)
+        for child in node.children:
+            self._printPreOrderHelper(child)
+
     def _classify(self, data_point):
         "Classifies a single data point/example"
         pass
 
-    # def _growTree(self, data, labels):
-    #     if homogeneous(D) then return (Node with Label(D) )
-    #     S = bestSplit(D)
-    #     split D into subsets D_i according to the literals in S
-    #     for each i:
-    #         if D_i is not empty then T_i = self(D_i)
-    #         else T_i = (Node with label=Label(D) )
+    def _growTree(self, data, labels):
+        if self._homogeneous(labels):
+            return DecisionTreeNode(label=self._label(labels) )
+
+        s = self._bestSplit(data, labels)
+
+        # split data into subsets according to the feature values of s
+        featureValueData = {v: [] for v in self._featureValues[s]}
+        featureValueLabels = {v: [] for v in self._featureValues[s]}
+        for ex, c in zip(data, labels):
+            v = ex[s]
+            featureValueData[v].append(ex)
+            featureValueLabels[v].append(c)
         
-    #     return (Node with label=None, featureSplit=S, children T_i)
+        # recursive step: get children
+        children = []
+        for v, dataSubset in featureValueData.items():
+            labelsSubset = featureValueLabels[v]
+
+            if dataSubset:
+                children.append(self._growTree(dataSubset, labelsSubset) )
+            else:   # Empty subset, so use parent's label
+                children.append(DecisionTreeNode(label=self._label(labels)) )
+
+        return DecisionTreeNode(featureSplit=s, children=children)
 
     def _homogeneous(self, labels):
         "Returns True iff data is at least 99% homogeneous"
@@ -80,26 +110,33 @@ class DecisionTree:
         classProbability = self._getClassProbabilities(labels)
         return classProbability.index( max(classProbability) )
 
-    # def _bestSplit(self, data, labels):
-    #     "Returns the feature that best splits D"
-    #     totalFeatureImpurity = []
+    def _bestSplit(self, data, labels):
+        "Returns the feature that best splits D"
+        totalFeatureImpurity = []
         
-    #     for f in self._numFeatures:
-    #         featureValueImpurity = {}
+        for f in range(self._numFeatures):
+            featureValueImpurities = []
 
-    #         # labels_f : feature value v -> subset of labels whose data has f=v
-    #         labels_f = {v: {} for v in self._featureValues[f] }
+            # labels_f[v]: sublist of labels whose data has f=v
+            labels_f = {v: [] for v in self._featureValues[f] }
 
-    #         for v in self._featureValues[f]:
-    #             for ex, c in zip(data, labels):
-    #                 if ex[f] == v:
-    #                     labels_f[v].add(c)
+            for v in self._featureValues[f]:
+                for ex, c in zip(data, labels):
+                    if ex[f] == v:
+                        labels_f[v].append(c)
 
-    #             featureValueImpurity[v] = self._impurity(labels_f_v)
+                featureValueImpurities.append(self._impurity(labels_f[v]) )
 
-    #         totalFeatureImpurity.append( 1/len(data) * sum( len(labels_f[v]) * featureValueImpurity[v] for v in self._featureValues[f] ) )
+            # print(f"labels_f: {labels_f}")
+            # print(f"featureValueImpurities: {featureValueImpurities}")
 
-    #     return totalFeatureImpurity.index( min(totalFeatureImpurity) )
+            totalFeatureImpurity.append(self._getTotalImpurity(featureValueImpurities, [len(labels_f[v]) for v in self._featureValues[f] ]) )
+
+        # print(f"totalFeatureImpurity: {totalFeatureImpurity}")
+        return totalFeatureImpurity.index( min(totalFeatureImpurity) )
+
+    def _getTotalImpurity(self, impurities, counts):
+        return 1/sum(counts) * sum( count * impurity for count, impurity in zip(counts, impurities) )
 
     def _impurity(self, labels):
         classProbability = self._getClassProbabilities(labels)
@@ -137,3 +174,54 @@ dt = DecisionTree()
 
 # print( dt._getClassProbabilities(labels) )  # [0.43, 0.29, 0.29]
 # print( dt._impurity(labels) )   # 0.65
+
+
+# # _getTotalImpurity : PASSED
+
+# impurities = [0.65, 0.43, 0.25]
+# counts = [3, 6, 2]
+# print( dt._getTotalImpurity(impurities, counts) )   # 0.46
+# impurities = [0.23, 0.99]
+# counts = [5, 6]
+# print( dt._getTotalImpurity(impurities, counts) )   # 0.64
+
+
+# # _bestSplit : PASSED
+
+# dt._numFeatures = 3
+# dt._numClasses = 2
+# dt._featureValues = [ {0, 1}, {0, 1}, {0, 1} ]
+
+# data =  [   [1, 0, 0],
+#             [0, 0, 0],
+#             [1, 1, 1],
+#             [0, 0, 1],
+#             [0, 1, 1],
+#             [0, 1, 0],
+#             [1, 0, 1]
+# ]
+# labels = [0, 0, 0, 0, 1, 1, 1]
+
+# print( dt._bestSplit(data, labels) )    # impurities = [0.476, 0.405, 0.476] => feature 1
+
+
+# # train -> _growTree : PASSED
+
+# dt._numFeatures = 3
+# dt._numClasses = 2
+# dt._featureValues = [ {0, 1}, {0, 1}, {0, 1} ]
+
+# data =  [   [1, 0, 0],
+#             [0, 0, 0],
+#             [1, 1, 1],
+#             [0, 0, 1],
+#             [0, 1, 1],
+#             [0, 1, 0],
+#             [1, 0, 1]
+# ]
+# labels = [0, 0, 0, 0, 1, 1, 1]
+
+# dt.train(data, labels)
+# dt.printPreOrder()
+# # featureSplit preorder: [1, 0, 2, 0]
+# # label preorder: [0, 0, 1, 1, 0]
