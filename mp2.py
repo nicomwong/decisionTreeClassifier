@@ -16,12 +16,9 @@ def run_train_test(training_data, training_labels, testing_data):
     Example:
     return [1]*len(testing_data)
     """
-    return [1]*len(testing_data)
-
-    #TODO implement the decision tree and return the prediction
-    # Create decision tree model
-    
-    # Run model predictor on testing data set
+    dt = DecisionTree()
+    dt.train(training_data, training_labels)
+    return dt.getTestingPredictions(testing_data)
 
 
 class DecisionTreeNode:
