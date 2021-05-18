@@ -42,7 +42,21 @@ class DecisionTree:
         # Hard-coded
         self._numFeatures = 8
         self._numClasses = 3
-        self._featureValues = []    # TODO
+        self._featureValues = [
+            {0, 1, 2},
+            {"underMean", "atleastMean"},
+            {"underMean", "atleastMean"},
+            {"underMean", "atleastMean"},
+            {"underMean", "atleastMean"},
+            {"underMean", "atleastMean"},
+            {"underMean", "atleastMean"},
+            {"underMean", "atleastMean"},
+        ]
+        self._featureMean = [None, 0.524, 0.408, 0.140, 0.829, 0.359, 0.181, 0.239]
+
+        # TODO Probably very low accuracy using continuous values; need to handle continuous values by making an _interpretFeatureValue(f, v) function
+        # TODO find [s] and [f] and add the interpretation
+        # TODO hard-code feature values
 
         # Hyper-parameters
         self._homogeneousPercentage = 0.99  # percentage of data for a node to be considered "homogeneous"
@@ -64,6 +78,18 @@ class DecisionTree:
         print(node)
         for child in node.children.values():
             self._printPreOrderHelper(child)
+
+    def _preProcess(self, data):
+        "Modifies data such that the feature values are replaced with the interpreted values"
+        for ex in data:
+            for f, v in enumerate(ex):
+                ex[f] = self._interpretFeatureValue(f, v)
+
+    def _interpretFeatureValue(self, feature, value):
+        if feature == 0:
+            return value
+        else:   # split continuous feature value by its mean
+            return int(value >= self._featureMean[feature])  # 0: under mean, 1: above mean
 
     def _classify(self, dataPoint):
         "Classifies a single data point/example"
@@ -260,3 +286,76 @@ dt = DecisionTree()
 # print( dt._classify([0, 1, 1]) )    # 1
 # print( dt._classify([1, 1, 0]) )    # 0
 # print( dt._classify([1, 1, 1]) )    # 0
+
+
+# # _preProcess -> _interpretFeatureValue : PASSED
+
+# data =  [
+#     [
+#         1,
+#         0.64,
+#         0.5,
+#         0.18,
+#         1.4995,
+#         0.593,
+#         0.314,
+#         0.431
+#     ],
+#     [
+#         2,
+#         0.44,
+#         0.345,
+#         0.115,
+#         0.545,
+#         0.269,
+#         0.111,
+#         0.1305
+#     ],
+#     [
+#         1,
+#         0.62,
+#         0.48,
+#         0.17,
+#         1.1045,
+#         0.535,
+#         0.25,
+#         0.287
+#     ]
+# ]
+
+# processedData = [
+#     [
+#         1,
+#         1,
+#         1,
+#         1,
+#         1,
+#         1,
+#         1,
+#         1
+#     ],
+#     [
+#         2,
+#         0,
+#         0,
+#         0,
+#         0,
+#         0,
+#         0,
+#         0
+#     ],
+#     [
+#         1,
+#         1,
+#         1,
+#         1,
+#         1,
+#         1,
+#         1,
+#         1
+#     ]
+# ]
+# dt._preProcess(data)
+# print(data)
+# print(processedData)
+# print(data == processedData)    # true
