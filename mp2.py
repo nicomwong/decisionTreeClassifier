@@ -44,13 +44,13 @@ class DecisionTree:
         self._numClasses = 3
         self._featureValues = [
             {0, 1, 2},
-            {"underMean", "atleastMean"},
-            {"underMean", "atleastMean"},
-            {"underMean", "atleastMean"},
-            {"underMean", "atleastMean"},
-            {"underMean", "atleastMean"},
-            {"underMean", "atleastMean"},
-            {"underMean", "atleastMean"},
+            {0, 1},
+            {0, 1},
+            {0, 1},
+            {0, 1},
+            {0, 1},
+            {0, 1},
+            {0, 1}
         ]
         self._featureMean = [None, 0.524, 0.408, 0.140, 0.829, 0.359, 0.181, 0.239]
 
@@ -64,10 +64,16 @@ class DecisionTree:
         self._root = None
         
     def train(self, training_data, training_labels):
-        self._root = self._growTree(training_data, training_labels)
+        self._preProcess(training_data)
+        features = {f for f in range(self._numFeatures) }
+        self._root = self._growTree(training_data, training_labels, features)
 
-    def test(self, testing_data):
-        pass
+    def getTestingPredictions(self, testing_data):
+        self._preProcess(testing_data)
+        predictions = []
+        for dataPoint in testing_data:
+            predictions.append(self._classify(dataPoint) )
+        return predictions
 
     def printPreOrder(self):
         self._printPreOrderHelper(self._root)
@@ -102,11 +108,20 @@ class DecisionTree:
         v = dataPoint[node.featureSplit]
         return self._decide(node.children[v], dataPoint)
 
-    def _growTree(self, data, labels):
-        if self._homogeneous(labels):
+    def _growTree(self, data, labels, features):
+        "Returns a DecisionTreeNode with proper children given the relevant data, labels, and (remaining) features"
+        # print(f"features = {features}")
+        # base cases
+        if not features:    # No features left to split by
+            # print("not features")
             return DecisionTreeNode(label=self._label(labels) )
 
-        s = self._bestSplit(data, labels)
+        if self._homogeneous(labels):   # Data is homogeneous enough to stop
+            # print("homogeneous")
+            return DecisionTreeNode(label=self._label(labels) )
+
+        s = self._bestSplit(data, labels, features)
+        # print(f"s = {s}")
 
         # split data into subsets according to the feature values of s
         featureValueData = {v: [] for v in self._featureValues[s]}
@@ -122,7 +137,7 @@ class DecisionTree:
             labelsSubset = featureValueLabels[v]
 
             if dataSubset:
-                children[v] = self._growTree(dataSubset, labelsSubset)
+                children[v] = self._growTree(dataSubset, labelsSubset, features - {s})
             else:   # Empty subset, so use parent's label
                 children[v] = DecisionTreeNode(label=self._label(labels) )
 
@@ -143,11 +158,11 @@ class DecisionTree:
         classProbability = self._getClassProbabilities(labels)
         return classProbability.index( max(classProbability) )
 
-    def _bestSplit(self, data, labels):
-        "Returns the feature that best splits D"
-        totalFeatureImpurity = []
+    def _bestSplit(self, data, labels, features):
+        "Returns the feature from the given set of features which best splits the data"
+        totalFeatureImpurity = {}
         
-        for f in range(self._numFeatures):
+        for f in features:
 
             # labels_f[v]: sublist of labels whose data has f=v
             labels_f = {v: [] for v in self._featureValues[f] }
@@ -162,10 +177,10 @@ class DecisionTree:
 
             featureValueCount = {v: len(labels_f[v]) for v in self._featureValues[f]}
 
-            totalFeatureImpurity.append(self._getTotalImpurity(f, featureValueImpurity, featureValueCount) )
+            totalFeatureImpurity[f] = self._getTotalImpurity(f, featureValueImpurity, featureValueCount)
 
         # print(f"totalFeatureImpurity: {totalFeatureImpurity}")
-        return totalFeatureImpurity.index( min(totalFeatureImpurity) )
+        return min(totalFeatureImpurity, key=totalFeatureImpurity.get)  # key with min value
 
     def _getTotalImpurity(self, feature, impurity, count):
         return 1/sum(count.values() ) * sum( count[v] * impurity[v] for v in self._featureValues[feature] )
@@ -235,11 +250,12 @@ dt = DecisionTree()
 #             [1, 0, 1]
 # ]
 # labels = [0, 0, 0, 0, 1, 1, 1]
+# features = {0, 1, 2}
 
-# print( dt._bestSplit(data, labels) )    # impurities = [0.476, 0.405, 0.476] => feature 1
+# print( dt._bestSplit(data, labels, features) )    # impurities = [0.476, 0.405, 0.476] => feature 1
 
 
-# # train -> _growTree : PASSED
+# # _growTree : PASSED
 
 # dt._numFeatures = 3
 # dt._numClasses = 2
@@ -254,8 +270,10 @@ dt = DecisionTree()
 #             [1, 0, 1]
 # ]
 # labels = [0, 0, 0, 0, 1, 1, 1]
-
-# dt.train(data, labels)
+# features = {0, 1, 2}
+# import sys
+# sys.setrecursionlimit(100)
+# dt._root = dt._growTree(data, labels, features)
 # dt.printPreOrder()
 # # featureSplit preorder: [1, 0, 2, 0]
 # # label preorder: [0, 0, 1, 1, 0]
