@@ -49,7 +49,7 @@ class DecisionTree:
             {0, 1},
             {0, 1}
         ]
-        self._featureMean = [None, 0.524, 0.408, 0.140, 0.829, 0.359, 0.181, 0.239]
+        self._featureMean = [None, 0.4, 0.5, 0.140, 0.7, 0.4, 0.181, 0.8]
 
         # TODO Probably very low accuracy using continuous values; need to handle continuous values by making an _interpretFeatureValue(f, v) function
         # TODO find [s] and [f] and add the interpretation
